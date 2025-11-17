@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tägliche Lernaufgaben - LRS-angepasst</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-4">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <header class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h1 class="text-3xl font-bold text-gray-800 text-center">📚 Tägliche Lernaufgabe</h1>
+            <p class="text-gray-600 text-center mt-2">Schritt für Schritt zum Lernerfolg - Einfach und verständlich</p>
+            <p class="text-sm text-gray-500 text-center mt-1">Über 100 verschiedene Aufgaben verfügbar!</p>
+        </header>
+
+        <!-- Hauptbereich -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <!-- Buttons zur Aufgabenauswahl -->
+            <div class="flex gap-4 mb-6 flex-wrap justify-center">
+                <button onclick="generiereZufaelligeAufgabe()" 
+                        class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all transform hover:scale-105 shadow-lg font-semibold">
+                    🎲 Zufällige Aufgabe generieren
+                </button>
+                <button onclick="generiereMatheAufgabe()" 
+                        class="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-3 rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all transform hover:scale-105 shadow-lg font-semibold">
+                    ➕ Mathe-Textaufgabe
+                </button>
+                <button onclick="generiereTextAufgabe()" 
+                        class="bg-gradient-to-r from-green-500 to-teal-500 text-white px-6 py-3 rounded-lg hover:from-green-600 hover:to-teal-600 transition-all transform hover:scale-105 shadow-lg font-semibold">
+                    📖 Textverständnis
+                </button>
+            </div>
+
+            <!-- Aufgabenbereich -->
+            <div id="aufgabenBereich" class="hidden">
+                <!-- Aufgabentyp-Anzeige -->
+                <div id="aufgabenTyp" class="mb-4 p-3 rounded-lg text-center font-semibold"></div>
+                
+                <!-- Aufgabentext -->
+                <div id="aufgabenText" class="bg-gray-50 p-6 rounded-lg mb-6 text-lg leading-relaxed"></div>
+                
+                <!-- Antwortbereich -->
+                <div id="antwortBereich" class="space-y-4"></div>
+                
+                <!-- Speichern Button -->
+                <div class="mt-6 flex gap-4 justify-center">
+                    <button onclick="speichereAntworten()" 
+                            class="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all transform hover:scale-105 shadow-lg font-semibold">
+                        💾 Antworten speichern
+                    </button>
+                    <button onclick="zeigeGespeicherteAntworten()" 
+                            class="bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-lg hover:from-gray-600 hover:to-gray-700 transition-all transform hover:scale-105 shadow-lg font-semibold">
+                        📋 Gespeicherte Antworten
+                    </button>
+                </div>
+            </div>
+
+            <!-- Startmeldung -->
+            <div id="startMeldung" class="text-center py-12 text-gray-500">
+                <p class="text-xl mb-2">👆 Klicke oben auf einen Button</p>
+                <p>um eine neue Aufgabe zu generieren!</p>
+            </div>
+        </div>
+
+        <!-- Gespeicherte Antworten Modal -->
+        <div id="gespeicherteAntwortenModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div class="bg-white rounded-lg max-w-3xl w-full max-h-[80vh] overflow-y-auto p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold">📋 Gespeicherte Antworten</h2>
+                    <button onclick="schliesseModal()" class="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
+                </div>
+                <div id="gespeicherteAntwortenInhalt"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Wiederholungsschutz - letzte 10 Aufgaben merken
+        let letzteAufgabenIndizes = {
+            mathe: [],
+            text: []
+        };
+        const WIEDERHOLUNGSSCHUTZ_ANZAHL = 10;
+
+        // Erweiterte Mathe-Aufgaben Datenbank (60+ Aufgaben)
+        const matheAufgaben = {
+            addition: [
+                { text: "Tom kauft 3 Äpfel. Seine Mutter gibt ihm noch 5 Äpfel dazu. Wie viele Äpfel hat Tom jetzt?", operation: "3 + 5" },
+                { text: "Lisa hat 12 Euro gespart. Sie bekommt 8 Euro Taschengeld. Wie viel Geld hat Lisa insgesamt?", operation: "12 + 8" },
+                { text: "Im Bus sitzen 15 Personen. An der Haltestelle steigen 7 Personen ein. Wie viele Personen sind jetzt im Bus?", operation: "15 + 7" },
+                { text: "Paul sammelt Karten. Er hat 24 Karten. Sein Freund schenkt ihm 16 Karten. Wie viele Karten hat Paul nun?", operation: "24 + 16" },
+                { text: "In der Schale liegen 18 Kirschen. Marie legt noch 13 Kirschen dazu. Wie viele Kirschen sind es zusammen?", operation: "18 + 13" },
+                { text: "Tim hat 27 Murmeln. Er findet noch 19 Murmeln. Wie viele Murmeln hat er insgesamt?", operation: "27 + 19" },
+                { text: "In der Klasse sind 14 Mädchen. Es kommen 11 Jungen dazu. Wie viele Kinder sind in der Klasse?", operation: "14 + 11" },
+                { text: "Der Bäcker backt 35 Brötchen. Später backt er noch 28 Brötchen. Wie viele Brötchen hat er gebacken?", operation: "35 + 28" },
+                { text: "Nina hat 43 Sticker. Ihre Oma schenkt ihr 37 weitere Sticker. Wie viele Sticker hat Nina jetzt?", operation: "43 + 37" },
+                { text: "Im Parkhaus stehen 56 Autos. Es kommen 29 Autos dazu. Wie viele Autos stehen nun im Parkhaus?", operation: "56 + 29" },
+                { text: "Leon hat 17 Fußballkarten. Er bekommt noch 26 Karten geschenkt. Wie viele Karten hat er insgesamt?", operation: "17 + 26" },
+                { text: "In der Dose sind 38 Kekse. Mama legt noch 24 Kekse dazu. Wie viele Kekse sind in der Dose?", operation: "38 + 24" },
+                { text: "Der Zug hat 67 Fahrgäste. Am Bahnhof steigen 45 Menschen ein. Wie viele Fahrgäste sind jetzt im Zug?", operation: "67 + 45" },
+                { text: "Im Schwimmbad sind 48 Kinder. Es kommen noch 33 Kinder. Wie viele Kinder sind insgesamt im Schwimmbad?", operation: "48 + 33" },
+                { text: "Julia hat 29 Perlen. Sie kauft noch 52 Perlen dazu. Wie viele Perlen hat Julia zusammen?", operation: "29 + 52" }
+            ],
+            subtraktion: [
+                { text: "Emma hat 20 Bonbons. Sie verschenkt 8 Bonbons an ihre Freunde. Wie viele Bonbons hat Emma noch?", operation: "20 - 8" },
+                { text: "Ein Parkplatz hat 50 Plätze. 35 Autos stehen dort. Wie viele Plätze sind noch frei?", operation: "50 - 35" },
+                { text: "Max hat 30 Euro. Er kauft ein Buch für 12 Euro. Wie viel Geld hat Max noch übrig?", operation: "30 - 12" },
+                { text: "In einer Schachtel sind 45 Stifte. Die Lehrerin nimmt 18 Stifte heraus. Wie viele Stifte sind noch in der Schachtel?", operation: "45 - 18" },
+                { text: "Tom hat 25 Murmeln. Er verliert 9 Murmeln. Wie viele Murmeln hat Tom noch?", operation: "25 - 9" },
+                { text: "Im Kühlschrank sind 32 Eier. Mama braucht 14 Eier zum Backen. Wie viele Eier bleiben übrig?", operation: "32 - 14" },
+                { text: "Lisa hat 60 Aufkleber. Sie gibt ihrer Schwester 23 Aufkleber ab. Wie viele hat Lisa noch?", operation: "60 - 23" },
+                { text: "Der Lehrer hat 48 Hefte. Er teilt 31 Hefte aus. Wie viele Hefte behält er?", operation: "48 - 31" },
+                { text: "Im Korb sind 75 Äpfel. Die Familie isst 28 Äpfel. Wie viele Äpfel bleiben im Korb?", operation: "75 - 28" },
+                { text: "Anna hat 84 Euro gespart. Sie kauft ein Spiel für 36 Euro. Wie viel Geld hat sie noch?", operation: "84 - 36" },
+                { text: "Im Bus sind 53 Personen. An der Haltestelle steigen 17 Personen aus. Wie viele bleiben im Bus?", operation: "53 - 17" },
+                { text: "Die Bäckerei hat 92 Brötchen. Es werden 47 Brötchen verkauft. Wie viele Brötchen sind noch da?", operation: "92 - 47" },
+                { text: "Im Regal stehen 66 Bücher. Die Klasse leiht sich 29 Bücher aus. Wie viele Bücher stehen noch im Regal?", operation: "66 - 29" },
+                { text: "Paul hat 41 Sammelkarten. Er tauscht 15 Karten mit seinem Freund. Wie viele Karten behält Paul?", operation: "41 - 15" },
+                { text: "Im Aquarium schwimmen 58 Fische. Der Besitzer verkauft 22 Fische. Wie viele Fische bleiben im Aquarium?", operation: "58 - 22" }
+            ],
+            multiplikation: [
+                { text: "Eine Packung hat 6 Eier. Tim kauft 4 Packungen. Wie viele Eier kauft Tim insgesamt?", operation: "6 × 4" },
+                { text: "Ein Kino hat 8 Reihen. In jeder Reihe sind 12 Sitze. Wie viele Sitze hat das Kino?", operation: "8 × 12" },
+                { text: "Sarah übt jeden Tag 15 Minuten Klavier. Wie viele Minuten übt sie in 7 Tagen?", operation: "15 × 7" },
+                { text: "Ein Heft kostet 3 Euro. Die Klasse kauft 9 Hefte. Wie viel kosten alle Hefte zusammen?", operation: "3 × 9" },
+                { text: "In einem Karton sind 5 Flaschen. Der Händler hat 8 Kartons. Wie viele Flaschen sind das insgesamt?", operation: "5 × 8" },
+                { text: "Ein Fahrrad hat 2 Räder. Im Fahrradladen stehen 11 Fahrräder. Wie viele Räder sind das zusammen?", operation: "2 × 11" },
+                { text: "Marie spart jede Woche 4 Euro. Wie viel Geld hat sie nach 13 Wochen gespart?", operation: "4 × 13" },
+                { text: "Ein Auto hat 4 Reifen. Auf dem Parkplatz stehen 16 Autos. Wie viele Reifen gibt es insgesamt?", operation: "4 × 16" },
+                { text: "In einer Box sind 7 Stifte. Tom kauft 6 Boxen. Wie viele Stifte hat er gekauft?", operation: "7 × 6" },
+                { text: "Ein Blumenstrauß hat 9 Blumen. Die Floristin macht 5 Sträuße. Wie viele Blumen braucht sie?", operation: "9 × 5" },
+                { text: "Ein Tisch hat 6 Stühle. Im Restaurant stehen 14 Tische. Wie viele Stühle gibt es insgesamt?", operation: "6 × 14" },
+                { text: "Eine Spinne hat 8 Beine. Im Terrarium sind 3 Spinnen. Wie viele Beine sind das zusammen?", operation: "8 × 3" },
+                { text: "Ein Buch hat 25 Seiten. Lisa liest 4 solcher Bücher. Wie viele Seiten liest sie insgesamt?", operation: "25 × 4" },
+                { text: "In einer Tüte sind 12 Gummibärchen. Max kauft 7 Tüten. Wie viele Gummibärchen hat er?", operation: "12 × 7" },
+                { text: "Ein Monat hat 30 Tage. Wie viele Tage haben 3 Monate zusammen?", operation: "30 × 3" }
+            ],
+            division: [
+                { text: "24 Schüler sollen in Gruppen aufgeteilt werden. Jede Gruppe hat 6 Schüler. Wie viele Gruppen gibt es?", operation: "24 ÷ 6" },
+                { text: "Eine Pizza wird in 8 gleiche Stücke geschnitten. 4 Freunde teilen sie gerecht. Wie viele Stücke bekommt jeder?", operation: "8 ÷ 4" },
+                { text: "Anna hat 36 Murmeln. Sie will sie gleichmäßig in 4 Tüten verteilen. Wie viele Murmeln kommen in jede Tüte?", operation: "36 ÷ 4" },
+                { text: "48 Kekse werden gleichmäßig auf 6 Teller verteilt. Wie viele Kekse liegen auf jedem Teller?", operation: "48 ÷ 6" },
+                { text: "30 Bonbons sollen an 5 Kinder verteilt werden. Wie viele Bonbons bekommt jedes Kind?", operation: "30 ÷ 5" },
+                { text: "Der Lehrer hat 28 Bücher. Er verteilt sie gleichmäßig an 7 Schüler. Wie viele Bücher bekommt jeder?", operation: "28 ÷ 7" },
+                { text: "45 Äpfel werden in Tüten zu je 9 Äpfeln verpackt. Wie viele Tüten werden benötigt?", operation: "45 ÷ 9" },
+                { text: "Ein Parkplatz hat 32 Plätze in 8 gleich großen Reihen. Wie viele Plätze hat jede Reihe?", operation: "32 ÷ 8" },
+                { text: "54 Stifte werden gleichmäßig in 6 Etuis verteilt. Wie viele Stifte kommen in jedes Etui?", operation: "54 ÷ 6" },
+                { text: "Eine Klasse mit 27 Schülern macht 3 gleich große Teams. Wie viele Schüler sind in jedem Team?", operation: "27 ÷ 3" },
+                { text: "40 Euro werden unter 5 Freunden gleichmäßig aufgeteilt. Wie viel bekommt jeder?", operation: "40 ÷ 5" },
+                { text: "72 Karten werden gleichmäßig an 8 Spieler verteilt. Wie viele Karten bekommt jeder Spieler?", operation: "72 ÷ 8" },
+                { text: "Ein Bäcker hat 63 Brötchen. Er packt sie in Tüten zu je 7 Brötchen. Wie viele Tüten braucht er?", operation: "63 ÷ 7" },
+                { text: "56 Schüler fahren mit Bussen. In jeden Bus passen 8 Schüler. Wie viele Busse werden gebraucht?", operation: "56 ÷ 8" },
+                { text: "Ein Gärtner hat 42 Blumen. Er pflanzt sie in 6 gleich große Beete. Wie viele Blumen kommen in jedes Beet?", operation: "42 ÷ 6" }
+            ]
+        };
+
+        // Erweiterte Text-Aufgaben Datenbank (50+ Aufgaben)
+        const textAufgaben = [
+            {
+                text: "Die Bienen sind wichtige Helfer in der Natur. Sie fliegen von Blüte zu Blüte und sammeln Nektar. Dabei tragen sie Pollen von einer Pflanze zur anderen. So helfen Bienen den Pflanzen bei der Vermehrung. Ohne Bienen gäbe es weniger Obst und Gemüse. Viele Bauern stellen deshalb Bienenstöcke in ihre Felder.",
+                fragen: [
+                    "Was ist die wichtigste Aufgabe der Bienen in der Natur?",
+                    "Was sammeln die Bienen von den Blüten?",
+                    "Was würde passieren, wenn es in deiner Stadt keine Bienen mehr gäbe? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Das Fahrrad wurde vor etwa 200 Jahren erfunden. Das erste Fahrrad hatte noch keine Pedale. Man musste sich mit den Füßen vom Boden abstoßen. Später kamen Pedale und eine Kette dazu. Heute gibt es sogar Fahrräder mit Elektromotor. Sie heißen E-Bikes.",
+                fragen: [
+                    "Worum geht es in diesem Text hauptsächlich?",
+                    "Wie bewegte man das erste Fahrrad vorwärts?",
+                    "Welche Vorteile hat ein E-Bike für ältere Menschen? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Plastik im Meer ist ein großes Problem. Viele Tiere verwechseln Plastik mit Nahrung. Schildkröten halten Plastiktüten für Quallen. Fische fressen kleine Plastikteile. Das macht die Tiere krank. Menschen können helfen, indem sie weniger Plastik benutzen.",
+                fragen: [
+                    "Was ist das Hauptproblem, das der Text beschreibt?",
+                    "Wofür halten Schildkröten die Plastiktüten?",
+                    "Was könntest du in deinem Alltag tun, um weniger Plastik zu verwenden? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Der Mond ist der einzige natürliche Begleiter der Erde. Er ist viel kleiner als die Erde. Der Mond hat kein eigenes Licht. Er leuchtet nur, weil die Sonne ihn anstrahlt. Je nachdem, wie Sonne, Erde und Mond zueinander stehen, sehen wir verschiedene Mondphasen.",
+                fragen: [
+                    "Was ist die wichtigste Information über den Mond?",
+                    "Warum leuchtet der Mond am Nachthimmel?",
+                    "Warum sieht der Mond manchmal wie eine Sichel aus? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Vögel ziehen im Herbst in den Süden. Dort ist es wärmer und sie finden mehr Nahrung. Diese Vögel nennt man Zugvögel. Störche, Schwalben und Kraniche sind bekannte Zugvögel. Sie fliegen tausende Kilometer weit. Im Frühling kommen sie wieder zurück.",
+                fragen: [
+                    "Was machen Zugvögel im Herbst?",
+                    "Welche drei Zugvögel werden im Text genannt?",
+                    "Wie könnten wir Vögeln helfen, die im Winter hier bleiben? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Smartphones sind kleine Computer. Sie passen in jede Hosentasche. Mit ihnen kann man telefonieren, Nachrichten schreiben und im Internet surfen. Die meisten Menschen haben heute ein Smartphone. Kinder bekommen oft ihr erstes Handy mit 10 Jahren.",
+                fragen: [
+                    "Was ist die Hauptaussage über Smartphones?",
+                    "Mit welchem Alter bekommen Kinder oft ihr erstes Handy?",
+                    "Welche Nachteile könnte es haben, wenn man zu viel Zeit am Smartphone verbringt? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Recycling bedeutet, aus alten Sachen neue zu machen. Papier, Glas und Metall kann man gut recyceln. Aus altem Papier wird neues Papier. Die verschiedenen Müllsorten werden getrennt gesammelt. In Deutschland gibt es dafür verschiedene Tonnen.",
+                fragen: [
+                    "Was bedeutet Recycling?",
+                    "Welche drei Materialien kann man gut recyceln?",
+                    "Warum ist es wichtig, dass alle Menschen beim Mülltrennen mitmachen? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Katzen sind beliebte Haustiere. Sie schlafen bis zu 16 Stunden am Tag. Katzen putzen sich sehr oft mit ihrer Zunge. Ihre Zunge ist rau wie Schmirgelpapier. Katzen können sehr gut im Dunkeln sehen. Sie jagen gerne Mäuse und Vögel.",
+                fragen: [
+                    "Was ist das Hauptthema dieses Textes?",
+                    "Wie viele Stunden schlafen Katzen am Tag?",
+                    "Warum sollten Katzenbesitzer ihre Katze mit einem Glöckchen ausstatten? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Bäume produzieren Sauerstoff. Sie nehmen Kohlendioxid aus der Luft auf. Ein großer Baum kann für zehn Menschen genug Sauerstoff produzieren. Bäume spenden auch Schatten und sind Lebensraum für viele Tiere. In Städten helfen Bäume, die Luft zu reinigen.",
+                fragen: [
+                    "Was ist die wichtigste Funktion von Bäumen?",
+                    "Für wie viele Menschen kann ein großer Baum Sauerstoff produzieren?",
+                    "Warum sollten in Städten mehr Bäume gepflanzt werden? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Wasser kann drei Formen haben. Als Eis ist es fest. Als Wasser ist es flüssig. Als Dampf ist es gasförmig. Wasser gefriert bei null Grad. Es kocht bei hundert Grad. Der Wasserkreislauf sorgt dafür, dass es immer wieder regnet.",
+                fragen: [
+                    "Welche drei Formen kann Wasser haben?",
+                    "Bei welcher Temperatur gefriert Wasser?",
+                    "Was würde passieren, wenn es keinen Wasserkreislauf gäbe? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Hunde stammen vom Wolf ab. Sie leben schon seit vielen tausend Jahren bei Menschen. Hunde haben einen sehr guten Geruchssinn. Sie können tausendmal besser riechen als Menschen. Deshalb werden Hunde auch als Spürhunde eingesetzt. Es gibt über 300 verschiedene Hunderassen.",
+                fragen: [
+                    "Von welchem Tier stammen Hunde ab?",
+                    "Wie viel besser können Hunde riechen als Menschen?",
+                    "Wobei könnten Spürhunde Menschen helfen? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Die Sonne ist ein Stern. Sie ist sehr heiß und sehr weit weg. Das Licht der Sonne braucht acht Minuten bis zur Erde. Ohne die Sonne wäre es auf der Erde dunkel und kalt. Pflanzen brauchen Sonnenlicht zum Wachsen. Die Sonne geht im Osten auf.",
+                fragen: [
+                    "Was ist die Sonne?",
+                    "Wie lange braucht das Sonnenlicht bis zur Erde?",
+                    "Was würde mit den Tieren passieren, wenn es keine Sonne gäbe? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Vulkane sind Öffnungen in der Erdkruste. Durch sie kann heißes Gestein aus dem Erdinneren nach oben kommen. Dieses heiße Gestein nennt man Lava. Wenn Lava erkaltet, wird sie zu festem Gestein. Viele Inseln sind durch Vulkane entstanden. In Deutschland gibt es auch Vulkane.",
+                fragen: [
+                    "Was sind Vulkane?",
+                    "Wie nennt man das heiße Gestein aus einem Vulkan?",
+                    "Warum leben Menschen in der Nähe von Vulkanen, obwohl es gefährlich sein kann? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Fledermäuse sind die einzigen Säugetiere, die fliegen können. Sie schlafen tagsüber kopfüber. Nachts gehen sie auf Jagd. Fledermäuse orientieren sich mit Ultraschall. Sie stoßen hohe Töne aus und hören das Echo. So finden sie auch in völliger Dunkelheit ihre Beute.",
+                fragen: [
+                    "Was macht Fledermäuse besonders unter den Säugetieren?",
+                    "Wie orientieren sich Fledermäuse in der Dunkelheit?",
+                    "Welche Technik haben Menschen von Fledermäusen abgeschaut? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Schmetterlinge durchlaufen eine Verwandlung. Aus dem Ei schlüpft eine Raupe. Die Raupe frisst viel und wächst schnell. Dann verpuppt sie sich. In der Puppe verwandelt sich die Raupe in einen Schmetterling. Diese Verwandlung dauert mehrere Wochen.",
+                fragen: [
+                    "Was ist das Hauptthema des Textes?",
+                    "Was macht die Raupe, bevor sie sich verpuppt?",
+                    "Warum sind Schmetterlinge wichtig für Blumen? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Dinosaurier lebten vor vielen Millionen Jahren. Es gab pflanzenfressende und fleischfressende Arten. Manche Dinosaurier waren so groß wie Häuser. Andere waren klein wie Hühner. Vor 65 Millionen Jahren starben alle Dinosaurier aus. Wissenschaftler finden heute noch ihre Knochen.",
+                fragen: [
+                    "Wann lebten die Dinosaurier?",
+                    "Welche zwei Arten von Dinosauriern gab es?",
+                    "Warum interessieren sich Menschen heute noch für Dinosaurier? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Honig wird von Bienen gemacht. Sie sammeln Nektar von Blüten. Im Bienenstock wandeln sie den Nektar in Honig um. Ein Bienenvolk kann im Jahr bis zu 30 Kilo Honig produzieren. Honig ist sehr lange haltbar. Menschen nutzen Honig schon seit tausenden Jahren.",
+                fragen: [
+                    "Wer macht den Honig?",
+                    "Wie viel Honig kann ein Bienenvolk pro Jahr produzieren?",
+                    "Warum ist Honig gesünder als Zucker? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Wale sind Säugetiere, die im Meer leben. Sie müssen zum Atmen an die Wasseroberfläche kommen. Der Blauwal ist das größte Tier der Welt. Er kann 30 Meter lang werden. Wale verständigen sich mit Gesängen unter Wasser. Manche Walarten sind vom Aussterben bedroht.",
+                fragen: [
+                    "Was müssen Wale zum Atmen tun?",
+                    "Wie lang kann ein Blauwal werden?",
+                    "Was können Menschen tun, um Wale zu schützen? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Gewitter entstehen bei warmem Wetter. Warme Luft steigt nach oben und bildet Gewitterwolken. In den Wolken entsteht elektrische Spannung. Diese entlädt sich als Blitz. Der Donner ist das Geräusch des Blitzes. Man sollte bei Gewitter nicht unter Bäumen stehen.",
+                fragen: [
+                    "Bei welchem Wetter entstehen Gewitter?",
+                    "Was ist der Donner?",
+                    "Wo ist man bei einem Gewitter am sichersten? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Schnee besteht aus gefrorenem Wasser. Jede Schneeflocke ist einzigartig. Schneeflocken haben immer sechs Ecken. Schnee reflektiert das Sonnenlicht, deshalb ist er weiß. In den Bergen liegt oft das ganze Jahr Schnee. Schnee isoliert und schützt Pflanzen vor Kälte.",
+                fragen: [
+                    "Woraus besteht Schnee?",
+                    "Wie viele Ecken hat eine Schneeflocke?",
+                    "Warum freuen sich Kinder über Schnee? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Computer bestehen aus Hardware und Software. Hardware sind alle Teile, die man anfassen kann. Software sind die Programme. Der Prozessor ist das Gehirn des Computers. Computer werden immer kleiner und schneller. Heute hat fast jeder Mensch einen Computer.",
+                fragen: [
+                    "Aus welchen zwei Hauptteilen besteht ein Computer?",
+                    "Was ist der Prozessor?",
+                    "Welche Nachteile könnte es haben, wenn Computer alles für uns erledigen? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Pferde wurden früher als Transportmittel genutzt. Sie können bis zu 60 Kilometer pro Stunde schnell laufen. Pferde sind Pflanzenfresser. Sie fressen hauptsächlich Gras und Heu. Ein Pferd kann bis zu 30 Jahre alt werden. Heute werden Pferde meist für Sport und Freizeit gehalten.",
+                fragen: [
+                    "Wofür wurden Pferde früher genutzt?",
+                    "Was fressen Pferde hauptsächlich?",
+                    "Warum ist Reiten gut für Menschen? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Pilze sind weder Pflanzen noch Tiere. Sie bilden ein eigenes Reich. Der sichtbare Pilz ist nur ein kleiner Teil. Der größte Teil wächst als Geflecht unter der Erde. Manche Pilze sind essbar, andere sind giftig. Pilze zersetzen totes Material im Wald.",
+                fragen: [
+                    "Sind Pilze Pflanzen oder Tiere?",
+                    "Wo wächst der größte Teil des Pilzes?",
+                    "Warum sollte man nur Pilze sammeln, die man genau kennt? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Wind entsteht durch Temperaturunterschiede. Warme Luft steigt nach oben, kalte Luft strömt nach. So entsteht Wind. Wind kann Energie erzeugen. Windräder wandeln Wind in Strom um. An der Küste weht meist mehr Wind als im Landesinneren.",
+                fragen: [
+                    "Wie entsteht Wind?",
+                    "Was machen Windräder mit dem Wind?",
+                    "Warum ist Windenergie gut für die Umwelt? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Fische leben im Wasser und atmen mit Kiemen. Sie nehmen Sauerstoff aus dem Wasser auf. Die meisten Fische haben Schuppen und Flossen. Fische legen Eier, die man Laich nennt. Es gibt Süßwasserfische und Salzwasserfische. Manche Fische leben in Schwärmen.",
+                fragen: [
+                    "Womit atmen Fische?",
+                    "Wie nennt man Fischeier?",
+                    "Warum schwimmen manche Fische in Schwärmen? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Ameisen leben in großen Staaten zusammen. Jede Ameise hat eine bestimmte Aufgabe. Die Königin legt Eier. Arbeiterinnen sammeln Nahrung und bauen das Nest. Ameisen können das Zehnfache ihres Gewichts tragen. Sie verständigen sich mit Duftstoffen.",
+                fragen: [
+                    "Wie leben Ameisen zusammen?",
+                    "Wie viel können Ameisen tragen?",
+                    "Was können Menschen von der Organisation der Ameisen lernen? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Bücher gibt es schon seit vielen hundert Jahren. Früher wurden sie von Hand geschrieben. Heute werden sie gedruckt. Es gibt Sachbücher und Geschichtenbücher. In Bibliotheken kann man Bücher ausleihen. Lesen macht schlau und erweitert den Wortschatz.",
+                fragen: [
+                    "Wie wurden Bücher früher hergestellt?",
+                    "Wo kann man Bücher ausleihen?",
+                    "Warum ist es wichtig, dass Kinder viel lesen? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Der Regenwald ist ein wichtiger Lebensraum. Dort leben mehr Tier- und Pflanzenarten als irgendwo sonst. Regenwälder produzieren viel Sauerstoff. Man nennt sie die grüne Lunge der Erde. Leider werden jeden Tag große Flächen abgeholzt. Das schadet dem Klima.",
+                fragen: [
+                    "Was ist das Besondere am Regenwald?",
+                    "Wie nennt man den Regenwald noch?",
+                    "Was können wir tun, um den Regenwald zu schützen? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Musik besteht aus Tönen und Rhythmus. Menschen machen schon seit Urzeiten Musik. Es gibt viele verschiedene Instrumente. Manche werden gezupft, andere geblasen oder geschlagen. Musik kann Gefühle ausdrücken. Viele Menschen hören täglich Musik.",
+                fragen: [
+                    "Woraus besteht Musik?",
+                    "Was kann Musik ausdrücken?",
+                    "Warum macht Musik Menschen glücklich? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Obst enthält viele Vitamine. Vitamine sind wichtig für unseren Körper. Äpfel, Bananen und Orangen sind beliebte Obstsorten. Obst wächst an Bäumen oder Sträuchern. Man sollte täglich Obst essen. Regional und saisonal ist am besten.",
+                fragen: [
+                    "Was enthält Obst?",
+                    "Wo wächst Obst?",
+                    "Warum ist es besser, Obst aus der Region zu kaufen? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Züge fahren auf Schienen. Sie können viele Menschen gleichzeitig transportieren. Der erste Zug fuhr vor etwa 200 Jahren. Moderne Züge fahren mit Strom. Hochgeschwindigkeitszüge können über 300 Stundenkilometer schnell fahren. Zugfahren ist umweltfreundlich.",
+                fragen: [
+                    "Worauf fahren Züge?",
+                    "Womit fahren moderne Züge?",
+                    "Warum sollten mehr Menschen mit dem Zug statt mit dem Auto fahren? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Sterne sind riesige Gaskugeln im Weltall. Sie leuchten, weil in ihrem Inneren Energie entsteht. Unsere Sonne ist auch ein Stern. Nachts können wir viele Sterne sehen. In der Stadt sieht man weniger Sterne als auf dem Land. Das liegt an der Lichtverschmutzung.",
+                fragen: [
+                    "Was sind Sterne?",
+                    "Warum sieht man in der Stadt weniger Sterne?",
+                    "Warum faszinieren Sterne die Menschen seit Jahrtausenden? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Milch kommt von Kühen, Ziegen oder Schafen. Sie enthält Kalzium, das gut für die Knochen ist. Aus Milch macht man Käse, Joghurt und Butter. Kühe geben täglich bis zu 30 Liter Milch. Manche Menschen vertragen keine Milch. Das nennt man Laktoseintoleranz.",
+                fragen: [
+                    "Von welchen Tieren kommt Milch?",
+                    "Was ist gut für die Knochen?",
+                    "Welche Alternativen gibt es für Menschen, die keine Milch vertragen? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Sport ist gesund für Körper und Geist. Bewegung stärkt die Muskeln und das Herz. Es gibt Einzelsportarten und Mannschaftssportarten. Fußball ist in Deutschland sehr beliebt. Sport macht mehr Spaß in der Gruppe. Kinder sollten täglich eine Stunde Sport treiben.",
+                fragen: [
+                    "Was stärkt die Bewegung?",
+                    "Wie lange sollten Kinder täglich Sport treiben?",
+                    "Was lernt man beim Mannschaftssport außer der Sportart selbst? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Geld ist ein Tauschmittel. Früher tauschten Menschen Waren direkt. Heute bezahlen wir mit Münzen und Scheinen. Es gibt auch digitales Geld auf Konten. Der Euro ist unsere Währung. In anderen Ländern gibt es andere Währungen.",
+                fragen: [
+                    "Was ist Geld?",
+                    "Wie heißt unsere Währung?",
+                    "Warum ist es wichtig, den Umgang mit Geld zu lernen? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Feuer entsteht, wenn etwas brennt. Dafür braucht es drei Dinge: Brennstoff, Sauerstoff und Hitze. Feuer kann nützlich sein zum Heizen und Kochen. Es kann aber auch gefährlich werden. Bei einem Brand muss man sofort die Feuerwehr rufen. Die Nummer ist 112.",
+                fragen: [
+                    "Was braucht Feuer zum Brennen?",
+                    "Welche Nummer hat die Feuerwehr?",
+                    "Warum war die Entdeckung des Feuers so wichtig für die Menschen? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Magnete ziehen bestimmte Metalle an. Jeder Magnet hat einen Nord- und einen Südpol. Gleiche Pole stoßen sich ab. Unterschiedliche Pole ziehen sich an. Die Erde ist ein großer Magnet. Deshalb funktioniert der Kompass.",
+                fragen: [
+                    "Was ziehen Magnete an?",
+                    "Was passiert bei gleichen Polen?",
+                    "Wo werden Magnete im Alltag verwendet? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Brücken verbinden zwei Ufer oder Täler. Es gibt verschiedene Arten von Brücken. Hängebrücken, Bogenbrücken und Balkenbrücken sind die häufigsten. Die längste Brücke der Welt ist über 160 Kilometer lang. Brücken müssen sehr stabil gebaut werden.",
+                fragen: [
+                    "Was verbinden Brücken?",
+                    "Welche drei Brückenarten werden genannt?",
+                    "Was würde passieren, wenn es keine Brücken gäbe? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Farben entstehen durch Licht. Weißes Licht besteht aus allen Farben. Ein Regenbogen zeigt alle Farben des Lichts. Die Grundfarben sind Rot, Gelb und Blau. Aus ihnen kann man alle anderen Farben mischen. Farben beeinflussen unsere Stimmung.",
+                fragen: [
+                    "Woraus besteht weißes Licht?",
+                    "Welche sind die drei Grundfarben?",
+                    "Warum werden Krankenhäuser oft in hellen Farben gestrichen? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Energie kann verschiedene Formen haben. Es gibt Bewegungsenergie, Wärmeenergie und elektrische Energie. Energie kann nicht verloren gehen, nur umgewandelt werden. Die Sonne ist unsere wichtigste Energiequelle. Wir sollten sparsam mit Energie umgehen.",
+                fragen: [
+                    "Welche Energieformen werden im Text genannt?",
+                    "Was ist unsere wichtigste Energiequelle?",
+                    "Wie kannst du zu Hause Energie sparen? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Bakterien sind winzig kleine Lebewesen. Man kann sie nur mit dem Mikroskop sehen. Es gibt nützliche und schädliche Bakterien. Nützliche Bakterien helfen bei der Verdauung. Schädliche Bakterien können Krankheiten verursachen. Händewaschen schützt vor vielen Bakterien.",
+                fragen: [
+                    "Womit kann man Bakterien sehen?",
+                    "Wobei helfen nützliche Bakterien?",
+                    "Wann ist Händewaschen besonders wichtig? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Wolken bestehen aus winzigen Wassertröpfchen. Sie entstehen, wenn Wasser verdunstet und aufsteigt. In der Höhe kühlt der Wasserdampf ab und wird zu Tröpfchen. Es gibt verschiedene Wolkenarten. Dunkle Wolken bringen meist Regen. Weiße Wolken bedeuten schönes Wetter.",
+                fragen: [
+                    "Woraus bestehen Wolken?",
+                    "Was bedeuten dunkle Wolken meist?",
+                    "Warum regnet es in Bergen öfter als im Flachland? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Eis schmilzt bei null Grad Celsius. Salz lässt Eis schneller schmelzen. Deshalb streut man im Winter Salz auf die Straßen. Eis ist leichter als Wasser. Darum schwimmt es oben. Das ist wichtig für Fische im Winter.",
+                fragen: [
+                    "Bei welcher Temperatur schmilzt Eis?",
+                    "Warum streut man Salz auf vereiste Straßen?",
+                    "Was würde mit Fischen im See passieren, wenn Eis schwerer als Wasser wäre? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Pflanzen brauchen Licht, Wasser und Nährstoffe zum Wachsen. Mit ihren Wurzeln nehmen sie Wasser aus dem Boden auf. Die Blätter fangen Sonnenlicht ein. Dabei produzieren Pflanzen Sauerstoff. Ohne Pflanzen könnten Menschen und Tiere nicht leben.",
+                fragen: [
+                    "Was brauchen Pflanzen zum Wachsen?",
+                    "Was produzieren Pflanzen?",
+                    "Warum sollte jeder Mensch eine Pflanze haben? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Erdbeben entstehen, wenn sich Erdplatten bewegen. Die Erde besteht aus verschiedenen Platten. Diese bewegen sich sehr langsam. Manchmal verhaken sie sich und lösen sich ruckartig. Das spüren wir als Erdbeben. In manchen Ländern gibt es oft Erdbeben.",
+                fragen: [
+                    "Wie entstehen Erdbeben?",
+                    "Woraus besteht die Erde?",
+                    "Warum bauen Menschen in Erdbebengebieten besondere Häuser? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Zeit messen wir mit Uhren. Ein Tag hat 24 Stunden. Eine Stunde hat 60 Minuten. Eine Minute hat 60 Sekunden. Früher orientierten sich Menschen an der Sonne. Heute haben wir genaue Atomuhren.",
+                fragen: [
+                    "Womit messen wir Zeit?",
+                    "Wie viele Minuten hat eine Stunde?",
+                    "Warum ist Pünktlichkeit in unserer Gesellschaft wichtig? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Flugzeuge können fliegen, weil ihre Flügel besonders geformt sind. Die Luft strömt oben schneller als unten. Dadurch entsteht Auftrieb. Große Flugzeuge können über 500 Menschen transportieren. Fliegen ist die schnellste Art zu reisen. Ein Flug nach Amerika dauert etwa acht Stunden.",
+                fragen: [
+                    "Warum können Flugzeuge fliegen?",
+                    "Wie viele Menschen passen in große Flugzeuge?",
+                    "Welche Nachteile hat das Fliegen für die Umwelt? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Papier wird aus Holz hergestellt. Bäume werden gefällt und zu Fasern verarbeitet. Diese Fasern werden zu Papier gepresst. Man kann auch Altpapier recyceln. Das schont die Wälder. Jeder Deutsche verbraucht im Jahr etwa 250 Kilo Papier.",
+                fragen: [
+                    "Woraus wird Papier hergestellt?",
+                    "Wie viel Papier verbraucht jeder Deutsche im Jahr?",
+                    "Wie kannst du im Alltag Papier sparen? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Schlaf ist wichtig für unseren Körper. Kinder brauchen mehr Schlaf als Erwachsene. Im Schlaf erholt sich der Körper. Das Gehirn verarbeitet die Erlebnisse des Tages. Zu wenig Schlaf macht krank. Jugendliche sollten etwa neun Stunden schlafen.",
+                fragen: [
+                    "Warum ist Schlaf wichtig?",
+                    "Wie viele Stunden sollten Jugendliche schlafen?",
+                    "Warum können viele Menschen abends schlecht einschlafen? (Denke über den Text hinaus)"
+                ]
+            },
+            {
+                text: "Zähne bestehen aus dem härtesten Material im Körper. Kinder haben 20 Milchzähne. Erwachsene haben 32 bleibende Zähne. Zähne müssen zweimal täglich geputzt werden. Zucker schadet den Zähnen. Beim Zahnarzt sollte man zweimal im Jahr zur Kontrolle.",
+                fragen: [
+                    "Wie viele Milchzähne haben Kinder?",
+                    "Wie oft sollte man die Zähne putzen?",
+                    "Warum haben viele Kinder Angst vor dem Zahnarzt? (Denke über den Text hinaus)"
+                ]
+            }
+        ];
+
+        let aktuelleAufgabe = null;
+        let aktuellerIndex = null;
+        let aufgabenTyp = '';
+
+        // Hilfsfunktion für Wiederholungsschutz
+        function holeZufaelligeAufgabe(aufgabenListe, typ) {
+            let verfuegbareIndizes = [];
+            for (let i = 0; i < aufgabenListe.length; i++) {
+                if (!letzteAufgabenIndizes[typ].includes(i)) {
+                    verfuegbareIndizes.push(i);
+                }
+            }
+            
+            // Falls alle Aufgaben kürzlich verwendet wurden, Liste zurücksetzen
+            if (verfuegbareIndizes.length === 0) {
+                letzteAufgabenIndizes[typ] = [];
+                verfuegbareIndizes = Array.from({length: aufgabenListe.length}, (_, i) => i);
+            }
+            
+            // Zufälligen Index aus verfügbaren wählen
+            const zufallsIndex = verfuegbareIndizes[Math.floor(Math.random() * verfuegbareIndizes.length)];
+            
+            // Index zur Liste der zuletzt verwendeten hinzufügen
+            letzteAufgabenIndizes[typ].push(zufallsIndex);
+            
+            // Liste auf maximale Länge begrenzen
+            if (letzteAufgabenIndizes[typ].length > WIEDERHOLUNGSSCHUTZ_ANZAHL) {
+                letzteAufgabenIndizes[typ].shift();
+            }
+            
+            return aufgabenListe[zufallsIndex];
+        }
+
+        function generiereZufaelligeAufgabe() {
+            if (Math.random() < 0.5) {
+                generiereMatheAufgabe();
+            } else {
+                generiereTextAufgabe();
+            }
+        }
+
+        function generiereMatheAufgabe() {
+            // Zufällige Operation wählen
+            const operationen = ['addition', 'subtraktion', 'multiplikation', 'division'];
+            const zufaelligeOperation = operationen[Math.floor(Math.random() * operationen.length)];
+            
+            // Alle Mathe-Aufgaben in eine Liste zusammenführen für Wiederholungsschutz
+            const alleMatheAufgaben = [];
+            for (let op in matheAufgaben) {
+                alleMatheAufgaben.push(...matheAufgaben[op]);
+            }
+            
+            // Zufällige Aufgabe mit Wiederholungsschutz
+            const zufaelligeAufgabe = holeZufaelligeAufgabe(matheAufgaben[zufaelligeOperation], 'mathe');
+            
+            aktuelleAufgabe = zufaelligeAufgabe;
+            aufgabenTyp = 'Mathematik-Textaufgabe';
+            
+            // UI aktualisieren
+            document.getElementById('startMeldung').classList.add('hidden');
+            document.getElementById('aufgabenBereich').classList.remove('hidden');
+            
+            // Aufgabentyp anzeigen
+            const typElement = document.getElementById('aufgabenTyp');
+            typElement.className = 'mb-4 p-3 rounded-lg text-center font-semibold bg-blue-100 text-blue-800';
+            typElement.innerHTML = '➕ Mathematik-Textaufgabe';
+            
+            // Aufgabentext anzeigen
+            document.getElementById('aufgabenText').innerHTML = `
+                <h3 class="font-bold text-xl mb-3 text-gray-800">Textaufgabe:</h3>
+                <p class="text-gray-700">${zufaelligeAufgabe.text}</p>
+            `;
+            
+            // Antwortfelder erstellen
+            document.getElementById('antwortBereich').innerHTML = `
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <label class="block text-gray-700 font-semibold mb-2">
+                        1. Welche Rechnung musst du durchführen?
+                    </label>
+                    <input type="text" id="antwort1" class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-lg"
+                           placeholder="Schreibe die Rechnung auf (z.B. 5 + 3)">
+                </div>
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <label class="block text-gray-700 font-semibold mb-2">
+                        2. Lösung:
+                    </label>
+                    <input type="text" id="antwort2" class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-lg"
+                           placeholder="Schreibe das Ergebnis">
+                </div>
+            `;
+        }
+
+        function generiereTextAufgabe() {
+            // Zufällige Textaufgabe mit Wiederholungsschutz
+            const zufaelligeAufgabe = holeZufaelligeAufgabe(textAufgaben, 'text');
+            
+            aktuelleAufgabe = zufaelligeAufgabe;
+            aufgabenTyp = 'Textverständnis';
+            
+            // UI aktualisieren
+            document.getElementById('startMeldung').classList.add('hidden');
+            document.getElementById('aufgabenBereich').classList.remove('hidden');
+            
+            // Aufgabentyp anzeigen
+            const typElement = document.getElementById('aufgabenTyp');
+            typElement.className = 'mb-4 p-3 rounded-lg text-center font-semibold bg-green-100 text-green-800';
+            typElement.innerHTML = '📖 Textverständnis-Aufgabe';
+            
+            // Aufgabentext anzeigen
+            document.getElementById('aufgabenText').innerHTML = `
+                <h3 class="font-bold text-xl mb-3 text-gray-800">Text:</h3>
+                <p class="text-gray-700 leading-relaxed">${zufaelligeAufgabe.text}</p>
+            `;
+            
+            // Antwortfelder für die drei Fragen erstellen
+            let antwortHTML = '';
+            zufaelligeAufgabe.fragen.forEach((frage, index) => {
+                antwortHTML += `
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <label class="block text-gray-700 font-semibold mb-2">
+                            Frage ${index + 1}: ${frage}
+                        </label>
+                        <textarea id="antwort${index + 1}" rows="2" 
+                                  class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-green-500 focus:outline-none text-lg"
+                                  placeholder="Schreibe deine Antwort hier..."></textarea>
+                    </div>
+                `;
+            });
+            document.getElementById('antwortBereich').innerHTML = antwortHTML;
+        }
+
+        function speichereAntworten() {
+            if (!aktuelleAufgabe) {
+                alert('Bitte generiere zuerst eine Aufgabe!');
+                return;
+            }
+            
+            const antworten = [];
+            const anzahlFragen = aufgabenTyp === 'Mathematik-Textaufgabe' ? 2 : 3;
+            
+            for (let i = 1; i <= anzahlFragen; i++) {
+                const antwortElement = document.getElementById(`antwort${i}`);
+                if (antwortElement) {
+                    antworten.push(antwortElement.value);
+                }
+            }
+            
+            // Prüfen ob alle Antworten ausgefüllt sind
+            if (antworten.some(a => a.trim() === '')) {
+                alert('Bitte fülle alle Antwortfelder aus!');
+                return;
+            }
+            
+            // Speichern im LocalStorage
+            const gespeicherteDaten = JSON.parse(localStorage.getItem('lernaufgaben') || '[]');
+            const neuerEintrag = {
+                datum: new Date().toLocaleString('de-DE'),
+                typ: aufgabenTyp,
+                aufgabe: aktuelleAufgabe,
+                antworten: antworten
+            };
+            
+            gespeicherteDaten.unshift(neuerEintrag); // Am Anfang hinzufügen
+            
+            // Maximal 50 Einträge speichern
+            if (gespeicherteDaten.length > 50) {
+                gespeicherteDaten.pop();
+            }
+            
+            localStorage.setItem('lernaufgaben', JSON.stringify(gespeicherteDaten));
+            
+            // Erfolgsmeldung
+            alert('✅ Deine Antworten wurden gespeichert!');
+            
+            // Felder leeren
+            for (let i = 1; i <= anzahlFragen; i++) {
+                const antwortElement = document.getElementById(`antwort${i}`);
+                if (antwortElement) {
+                    antwortElement.value = '';
+                }
+            }
+        }
+
+        function zeigeGespeicherteAntworten() {
+            const gespeicherteDaten = JSON.parse(localStorage.getItem('lernaufgaben') || '[]');
+            
+            if (gespeicherteDaten.length === 0) {
+                alert('Es sind noch keine Antworten gespeichert.');
+                return;
+            }
+            
+            let inhaltHTML = '';
+            
+            gespeicherteDaten.forEach((eintrag, index) => {
+                const farbKlasse = eintrag.typ === 'Mathematik-Textaufgabe' ? 'bg-blue-50' : 'bg-green-50';
+                
+                inhaltHTML += `
+                    <div class="${farbKlasse} p-4 rounded-lg mb-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="font-semibold text-gray-700">${eintrag.typ}</span>
+                            <span class="text-sm text-gray-500">${eintrag.datum}</span>
+                        </div>
+                        <div class="mt-2 text-gray-700">
+                            <p class="font-medium mb-2">Aufgabe:</p>
+                            <p class="mb-3 italic">${eintrag.aufgabe.text}</p>
+                            <p class="font-medium mb-1">Deine Antworten:</p>
+                `;
+                
+                if (eintrag.typ === 'Mathematik-Textaufgabe') {
+                    inhaltHTML += `
+                        <p class="ml-4">• Rechnung: ${eintrag.antworten[0]}</p>
+                        <p class="ml-4">• Lösung: ${eintrag.antworten[1]}</p>
+                    `;
+                } else {
+                    eintrag.aufgabe.fragen.forEach((frage, i) => {
+                        inhaltHTML += `
+                            <p class="ml-4 mb-1">• ${frage}</p>
+                            <p class="ml-8 text-blue-700 mb-2">→ ${eintrag.antworten[i]}</p>
+                        `;
+                    });
+                }
+                
+                inhaltHTML += `
+                        </div>
+                        <button onclick="loescheEintrag(${index})" 
+                                class="mt-2 text-red-600 hover:text-red-800 text-sm">
+                            🗑️ Löschen
+                        </button>
+                    </div>
+                `;
+            });
+            
+            inhaltHTML += `
+                <div class="mt-4 text-center">
+                    <button onclick="loescheAlleEintraege()" 
+                            class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">
+                        🗑️ Alle Einträge löschen
+                    </button>
+                </div>
+            `;
+            
+            document.getElementById('gespeicherteAntwortenInhalt').innerHTML = inhaltHTML;
+            document.getElementById('gespeicherteAntwortenModal').classList.remove('hidden');
+        }
+
+        function loescheEintrag(index) {
+            if (confirm('Möchtest du diesen Eintrag wirklich löschen?')) {
+                const gespeicherteDaten = JSON.parse(localStorage.getItem('lernaufgaben') || '[]');
+                gespeicherteDaten.splice(index, 1);
+                localStorage.setItem('lernaufgaben', JSON.stringify(gespeicherteDaten));
+                zeigeGespeicherteAntworten(); // Ansicht aktualisieren
+            }
+        }
+
+        function loescheAlleEintraege() {
+            if (confirm('Möchtest du wirklich ALLE gespeicherten Einträge löschen?')) {
+                localStorage.removeItem('lernaufgaben');
+                schliesseModal();
+                alert('Alle Einträge wurden gelöscht.');
+            }
+        }
+
+        function schliesseModal() {
+            document.getElementById('gespeicherteAntwortenModal').classList.add('hidden');
+        }
+
+        // ESC-Taste zum Schließen des Modals
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                schliesseModal();
+            }
+        });
+
+        // Info beim Laden anzeigen
+        console.log(`📚 Lernaufgaben-Tool geladen!`);
+        console.log(`➕ ${Object.values(matheAufgaben).flat().length} Mathe-Aufgaben verfügbar`);
+        console.log(`📖 ${textAufgaben.length} Textverständnis-Aufgaben verfügbar`);
+    </script>
+</body>
+</html>
